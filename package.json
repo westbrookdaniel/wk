@@ -1,16 +1,16 @@
 {
-  "name": "wt",
+  "name": "wk",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "wt": "src/index.ts"
+    "wk": "src/index.ts"
   },
   "scripts": {
     "test": "bun test",
     "typecheck": "tsc --noEmit",
     "lint": "biome check src",
-    "compile": "bun build ./src/index.ts --compile --outfile ./dist/wt"
+    "compile": "bun build ./src/index.ts --compile --outfile ./dist/wk"
   },
   "module": "src/index.ts",
   "devDependencies": {

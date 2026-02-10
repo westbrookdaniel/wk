@@ -14,10 +14,10 @@ import {
 import type { ParsedArgs } from "./types.ts";
 
 export function help(): void {
-	console.log(`wt - manage git worktrees in a global depot
+	console.log(`wk - manage git worktrees in a global depot
 
 USAGE:
-  wt <command> [options]
+  wk <command> [options]
 
 DESCRIPTION:
   Stores worktrees outside your repo so .gitignore isn't affected.
@@ -38,7 +38,7 @@ GLOBAL OPTIONS:
   -h, --help             Show help
 
 APPLY (default):
-  wt apply <name> merges branch <name> into --target (default: main).
+  wk apply <name> merges branch <name> into --target (default: main).
 
 APPLY MODES:
   --merge    (default)   Merge worktree branch into target
@@ -46,10 +46,10 @@ APPLY MODES:
   --patch                Apply diff as patch (includes uncommitted changes), optionally commit
 
 EXAMPLES:
-  wt new feat-login main
-  cd "$(wt path feat-login)"
-  wt apply feat-login
-  wt rm feat-login
+  wk new feat-login main
+  cd "$(wk path feat-login)"
+  wk apply feat-login
+  wk rm feat-login
 `);
 }
 
@@ -84,25 +84,25 @@ export function runCommand(command: string, args: ParsedArgs): void {
 function cmdNew(args: ParsedArgs): void {
 	const name = args._[1];
 	const base = args._[2] ?? "main";
-	if (!name) throw new Error("Usage: wt new <name> [base]");
+	if (!name) throw new Error("Usage: wk new <name> [base]");
 
 	const repoRoot = resolveRepoRoot(flagStr(args, "repo"));
 	const depot = path.resolve(flagStr(args, "depot") ?? defaultDepot());
 
-	const wtDir = worktreePath(depot, repoRoot, name);
-	ensureDir(path.dirname(wtDir));
+	const wkDir = worktreePath(depot, repoRoot, name);
+	ensureDir(path.dirname(wkDir));
 
 	const branch = flagStr(args, "branch", name) ?? name;
 	const noBranch = flagBool(args, "no-branch", false);
 
-	if (existsSync(wtDir)) {
+	if (existsSync(wkDir)) {
 		throw new Error(
-			`Worktree already exists at: ${wtDir}\nTip: remove it first: wt rm ${name}`,
+			`Worktree already exists at: ${wkDir}\nTip: remove it first: wk rm ${name}`,
 		);
 	}
 
 	if (noBranch) {
-		git(repoRoot, ["worktree", "add", wtDir, base]);
+		git(repoRoot, ["worktree", "add", wkDir, base]);
 	} else {
 		const branchExists = (() => {
 			try {
@@ -118,20 +118,20 @@ function cmdNew(args: ParsedArgs): void {
 		})();
 
 		if (branchExists) {
-			git(repoRoot, ["worktree", "add", wtDir, branch]);
+			git(repoRoot, ["worktree", "add", wkDir, branch]);
 		} else {
-			git(repoRoot, ["worktree", "add", "-b", branch, wtDir, base]);
+			git(repoRoot, ["worktree", "add", "-b", branch, wkDir, base]);
 		}
 	}
 
 	console.log(`Created worktree: ${name}
-Path: ${wtDir}
+Path: ${wkDir}
 Repo: ${repoRoot}
 Branch: ${noBranch ? `(ref: ${base})` : branch}
 
 Next:
-  cd "${wtDir}"
-  wt apply ${name}`);
+  cd "${wkDir}"
+  wk apply ${name}`);
 }
 
 function cmdList(args: ParsedArgs): void {
@@ -152,7 +152,7 @@ function cmdList(args: ParsedArgs): void {
 
 function cmdPath(args: ParsedArgs): void {
 	const name = args._[1];
-	if (!name) throw new Error("Usage: wt path <name>");
+	if (!name) throw new Error("Usage: wk path <name>");
 
 	const repoRoot = resolveRepoRoot(flagStr(args, "repo"));
 	const depot = path.resolve(flagStr(args, "depot") ?? defaultDepot());
@@ -163,27 +163,27 @@ function cmdRm(args: ParsedArgs): void {
 	const name = args._[1];
 	if (!name)
 		throw new Error(
-			"Usage: wt rm <name> [--force] [--delete-branch|--keep-branch]",
+			"Usage: wk rm <name> [--force] [--delete-branch|--keep-branch]",
 		);
 
 	const repoRoot = resolveRepoRoot(flagStr(args, "repo"));
 	const depot = path.resolve(flagStr(args, "depot") ?? defaultDepot());
-	const wtDir = worktreePath(depot, repoRoot, name);
+	const wkDir = worktreePath(depot, repoRoot, name);
 
 	const force = flagBool(args, "force", false);
 	const deleteBranch = flagBool(args, "delete-branch", false);
 	const keepBranch = flagBool(args, "keep-branch", false);
 
-	if (!existsSync(wtDir)) {
-		throw new Error(`No worktree directory found: ${wtDir}`);
+	if (!existsSync(wkDir)) {
+		throw new Error(`No worktree directory found: ${wkDir}`);
 	}
 
-	const removeArgs = ["worktree", "remove", wtDir];
+	const removeArgs = ["worktree", "remove", wkDir];
 	if (force) removeArgs.push("--force");
 	git(repoRoot, removeArgs);
 
 	try {
-		if (existsSync(wtDir)) rmSync(wtDir, { recursive: true, force: true });
+		if (existsSync(wkDir)) rmSync(wkDir, { recursive: true, force: true });
 	} catch {
 		// best-effort cleanup
 	}
@@ -214,14 +214,14 @@ function cmdApply(args: ParsedArgs): void {
 	const name = args._[1];
 	if (!name) {
 		throw new Error(
-			"Usage: wt apply <name> [--target <branch>] [--merge|--rebase|--patch]",
+			"Usage: wk apply <name> [--target <branch>] [--merge|--rebase|--patch]",
 		);
 	}
 
 	const repoRoot = resolveRepoRoot(flagStr(args, "repo"));
 	const depot = path.resolve(flagStr(args, "depot") ?? defaultDepot());
-	const wtDir = worktreePath(depot, repoRoot, name);
-	if (!existsSync(wtDir)) throw new Error(`Worktree not found: ${wtDir}`);
+	const wkDir = worktreePath(depot, repoRoot, name);
+	if (!existsSync(wkDir)) throw new Error(`Worktree not found: ${wkDir}`);
 
 	const target = flagStr(args, "target", "main") ?? "main";
 	const merge = flagBool(args, "merge", false);
@@ -251,10 +251,10 @@ function cmdApply(args: ParsedArgs): void {
 		}
 	})();
 
-	if (mode !== "patch" && isDirty(wtDir)) {
+	if (mode !== "patch" && isDirty(wkDir)) {
 		console.error(
 			`Warning: worktree has uncommitted changes; ${mode} will NOT include them.\n` +
-				`Tip: commit them, or use: wt apply ${name} --patch\n`,
+				`Tip: commit them, or use: wk apply ${name} --patch\n`,
 		);
 	}
 
@@ -273,8 +273,8 @@ function cmdApply(args: ParsedArgs): void {
 		}
 
 		if (mode === "rebase") {
-			git(wtDir, ["checkout", name]);
-			git(wtDir, ["rebase", target]);
+			git(wkDir, ["checkout", name]);
+			git(wkDir, ["rebase", target]);
 
 			git(repoRoot, ["checkout", target]);
 			git(repoRoot, ["merge", "--ff-only", name]);
@@ -282,7 +282,7 @@ function cmdApply(args: ParsedArgs): void {
 			return;
 		}
 
-		const patchText = buildPatch(wtDir, baseRef);
+		const patchText = buildPatch(wkDir, baseRef);
 		if (!patchText.trim()) {
 			console.log("No changes to apply (patch is empty).");
 			return;

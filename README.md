@@ -1,16 +1,16 @@
-# wt
+# wk
 
 Bun + TS CLI for managing git worktrees in a global depot
 
 ## Commands
 
 ```
-wt new <name> [base] [--repo <path>] [--depot <path>] [--branch <branch>] [--no-branch]
-wt list [--repo <path>] [--depot <path>] [--all]
-wt path <name> [--repo <path>] [--depot <path>]
-wt rm <name> [--repo <path>] [--depot <path>] [--force] [--delete-branch] [--keep-branch]
-wt apply <name> [--repo <path>] [--depot <path>] [--target <branch>] [--merge|--rebase|--patch] [--no-ff] [--message <msg>]
-wt prune [--repo <path>] [--depot <path>]
+wk new <name> [base] [--repo <path>] [--depot <path>] [--branch <branch>] [--no-branch]
+wk list [--repo <path>] [--depot <path>] [--all]
+wk path <name> [--repo <path>] [--depot <path>]
+wk rm <name> [--repo <path>] [--depot <path>] [--force] [--delete-branch] [--keep-branch]
+wk apply <name> [--repo <path>] [--depot <path>] [--target <branch>] [--merge|--rebase|--patch] [--no-ff] [--message <msg>]
+wk prune [--repo <path>] [--depot <path>]
 ```
 
 Default depot:
