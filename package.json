@@ -1,0 +1,16 @@
+{
+  "name": "wt",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "wt": "src/index.ts"
+  },
+  "module": "src/index.ts",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
