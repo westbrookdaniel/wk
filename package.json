@@ -6,8 +6,15 @@
   "bin": {
     "wt": "src/index.ts"
   },
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check src",
+    "compile": "bun build ./src/index.ts --compile --outfile ./dist/wt"
+  },
   "module": "src/index.ts",
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
     "@types/bun": "latest"
   },
   "peerDependencies": {
