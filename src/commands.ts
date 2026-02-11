@@ -1,4 +1,5 @@
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, writeFileSync } from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import { flagBool, flagStr } from "./cli/args.ts";
 import { git, resolveRepoRoot } from "./core/git.ts";
@@ -44,6 +45,7 @@ APPLY MODES:
   --merge    (default)   Merge worktree branch into target
   --rebase               Rebase worktree branch onto target then fast-forward target
   --patch                Apply diff as patch (includes uncommitted changes), optionally commit
+  --switch               Switch repo checkout to the ticket branch (no merge)
 
 EXAMPLES:
   wk new feat-login main
@@ -214,7 +216,7 @@ function cmdApply(args: ParsedArgs): void {
 	const name = args._[1];
 	if (!name) {
 		throw new Error(
-			"Usage: wk apply <name> [--target <branch>] [--merge|--rebase|--patch]",
+			"Usage: wk apply <name> [--target <branch>] [--merge|--rebase|--patch|--switch]",
 		);
 	}
 
@@ -227,8 +229,26 @@ function cmdApply(args: ParsedArgs): void {
 	const merge = flagBool(args, "merge", false);
 	const rebase = flagBool(args, "rebase", false);
 	const patch = flagBool(args, "patch", false);
+	const switchBranch = flagBool(args, "switch", false);
 	const noFF = flagBool(args, "no-ff", false);
 	const message = flagStr(args, "message");
+
+	if (switchBranch) {
+		if (isDirty(repoRoot)) {
+			throw new Error(
+				"Main repo has uncommitted changes. Commit/stash them before apply --switch.",
+			);
+		}
+
+		const wkBranch = currentBranch(wkDir);
+		if (wkBranch === name) {
+			git(wkDir, ["checkout", "--detach"]);
+		}
+
+		git(repoRoot, ["checkout", name]);
+		console.log(`Applied (switch): checked out branch ${name} in repo.`);
+		return;
+	}
 
 	const mode = resolveApplyMode({ merge, rebase, patch });
 
@@ -288,18 +308,16 @@ function cmdApply(args: ParsedArgs): void {
 			return;
 		}
 
-		const applyResult = Bun.spawnSync(["git", "apply", "--index"], {
-			cwd: repoRoot,
-			stdin: new TextEncoder().encode(patchText),
-			stdout: "pipe",
-			stderr: "pipe",
-		});
+		const tempPatchPath = path.join(
+			os.tmpdir(),
+			`wk-apply-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}-${Date.now()}.patch`,
+		);
 
-		if (applyResult.exitCode !== 0) {
-			const stderr = applyResult.stderr
-				? Buffer.from(applyResult.stderr).toString("utf8")
-				: "";
-			throw new Error(`git apply failed.\n${stderr.trim()}`);
+		try {
+			writeFileSync(tempPatchPath, patchText, "utf8");
+			git(repoRoot, ["apply", "--index", tempPatchPath]);
+		} finally {
+			rmSync(tempPatchPath, { force: true });
 		}
 
 		if (message) {

@@ -45,11 +45,10 @@ export function currentBranch(repoRoot: string): string | null {
 }
 
 export function buildPatch(worktreeDir: string, baseRef: string): string {
-	const committed = git(worktreeDir, ["diff", `${baseRef}..HEAD`], true).stdout;
-	const staged = git(worktreeDir, ["diff", "--cached"], true).stdout;
-	const unstaged = git(worktreeDir, ["diff"], true).stdout;
-
-	return [committed, staged, unstaged].filter(Boolean).join("\n");
+	// Build one consolidated patch from baseRef to current working tree state.
+	// This avoids malformed concatenated patches and includes both committed and
+	// local staged/unstaged tracked-file changes.
+	return git(worktreeDir, ["diff", "--no-color", `${baseRef}`], true).stdout;
 }
 
 export function resolveApplyMode(flags: {

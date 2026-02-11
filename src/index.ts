@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 import { flagBool, parseCliArgs } from "./cli/args.ts";
 import { help, runCommand } from "./commands.ts";
 import { die, errorMessage } from "./core/errors.ts";
