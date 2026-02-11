@@ -62,13 +62,13 @@ git status -sb
 Common usage:
 
 ```bash
-wk new <branch-name> <base> --repo ./coreplan
-wk new <branch-name> <base> --repo ./coreplan-web
-wk new <branch-name> <base> --repo ./capture
-wk list --repo ./coreplan
-wk path <name> --repo ./coreplan
-wk apply <name> --repo ./coreplan
-wk rm <name> --repo ./coreplan
+wk new <branch-name> <base> --repo ./example
+wk new <branch-name> <base> --repo ./example
+wk new <branch-name> <base> --repo ./example
+wk list --repo ./example
+wk path <name> --repo ./example
+wk apply <name> --repo ./example
+wk rm <name> --repo ./example
 ```
 
 ### Apply-Based Review Gate (Required when requested)
