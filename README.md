@@ -55,7 +55,7 @@ git status -sb
 
 ### Apply Behavior (Important)
 
-- `wk apply <name> --repo <repo> --switch` switches the target repo to the branch tip.
+- `wk apply <name> --repo <repo> --switch` switches the target repo to the branch tip (requires a clean repo; errors if dirty).
 - It does **not** transfer uncommitted changes from another worktree.
 - For apply-based review, commit your work on the ticket branch first, then run `wk apply ... --switch`.
 
@@ -162,7 +162,7 @@ wk prune [--repo <path>] [--depot <path>]
   - Default mode is `--merge` when no mode flags are provided.
   - If multiple of `--merge|--rebase|--patch` are passed, precedence is: `--patch`, then `--rebase`, then `--merge`.
 - `--switch`: optional bool. Default: `false`.
-  - If true, checks out `<name>` in the target repo and does not merge.
+  - If true, checks out `<name>` in the target repo and does not merge. Fails if the target repo is dirty.
 - `--no-ff`: optional bool. Default: `false`.
   - Only used with merge mode (`--merge`).
 - `--message <msg>`: optional. No default.
@@ -177,7 +177,7 @@ wk prune [--repo <path>] [--depot <path>]
 - `--patch`: applies a patch from merge-base to current worktree state (includes uncommitted tracked changes)
 - `--switch`: checks out the ticket branch in the main repo (no merge)
 - `--merge` and `--rebase` do not include uncommitted worktree changes
-- `wk apply` will fail if the main repo is dirty for non-patch modes
+- `wk apply` will fail if the main repo is dirty for non-patch modes (merge/rebase/switch)
 
 ## Contributing
 

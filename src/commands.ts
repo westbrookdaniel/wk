@@ -45,7 +45,7 @@ APPLY MODES:
   --merge    (default)   Merge worktree branch into target
   --rebase               Rebase worktree branch onto target then fast-forward target
   --patch                Apply diff as patch (includes uncommitted changes), optionally commit
-  --switch               Switch repo checkout to the ticket branch (no merge)
+  --switch               Switch repo checkout to the ticket branch (requires clean repo)
 
 EXAMPLES:
   wk new feat-login main
@@ -235,9 +235,10 @@ function cmdApply(args: ParsedArgs): void {
 
 	if (switchBranch) {
 		if (isDirty(repoRoot)) {
-			throw new Error(
-				"Main repo has uncommitted changes. Commit/stash them before apply --switch.",
+			console.error(
+				"Warning: repo has uncommitted changes. Clean your branch before using --switch.",
 			);
+			throw new Error("Aborting apply --switch with dirty repo.");
 		}
 
 		const wkBranch = currentBranch(wkDir);
@@ -308,13 +309,17 @@ function cmdApply(args: ParsedArgs): void {
 			return;
 		}
 
+		const normalizedPatchText = patchText.endsWith("\n")
+			? patchText
+			: `${patchText}\n`;
+
 		const tempPatchPath = path.join(
 			os.tmpdir(),
 			`wk-apply-${name.replace(/[^a-zA-Z0-9._-]/g, "_")}-${Date.now()}.patch`,
 		);
 
 		try {
-			writeFileSync(tempPatchPath, patchText, "utf8");
+			writeFileSync(tempPatchPath, normalizedPatchText, "utf8");
 			git(repoRoot, ["apply", "--index", tempPatchPath]);
 		} finally {
 			rmSync(tempPatchPath, { force: true });
