@@ -18,6 +18,9 @@ wk apply example-branch
 
 # Remove worktree metadata
 wk rm example-branch
+
+# Remove all worktrees for a repo
+wk rm --all --repo ./example
 ```
 
 ## AI Workflows
@@ -121,7 +124,7 @@ bun run compile
 wk new <name> [base] [--repo <path>] [--depot <path>] [--branch <branch>] [--no-branch]
 wk list [--repo <path>] [--depot <path>] [--all]
 wk path <name> [--repo <path>] [--depot <path>]
-wk rm <name> [--repo <path>] [--depot <path>] [--force] [--delete-branch] [--keep-branch]
+wk rm [<name>] [--repo <path>] [--depot <path>] [--all] [--force] [--delete-branch] [--keep-branch]
 wk apply <name> [--repo <path>] [--depot <path>] [--target <branch>] [--merge|--rebase|--patch|--switch] [--no-ff] [--message <msg>]
 wk prune [--repo <path>] [--depot <path>]
 ```
@@ -148,8 +151,10 @@ wk prune [--repo <path>] [--depot <path>]
 
 - No command-specific flags beyond global flags.
 
-### `wk rm <name>`
+### `wk rm [<name>]`
 
+- `--all`: optional bool. Default: `false`.
+  - If true, removes all worktrees for the repo (respects `--repo`).
 - `--force`: optional bool. Default: `false`.
 - `--delete-branch`: optional bool. Default: `false`.
 - `--keep-branch`: optional bool. Default: `false`.

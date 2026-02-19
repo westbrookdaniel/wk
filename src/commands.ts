@@ -1,4 +1,4 @@
-import { existsSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { flagBool, flagStr } from "./cli/args.ts";
@@ -9,6 +9,7 @@ import {
 	defaultDepot,
 	ensureDir,
 	isDirty,
+	repoIdFromRoot,
 	resolveApplyMode,
 	worktreePath,
 } from "./core/worktree.ts";
@@ -29,7 +30,7 @@ COMMANDS:
   new <name> [base]      Create worktree <name> from base ref (default: main)
   list                   List worktrees for this repo (or --all)
   path <name>            Print the filesystem path to a worktree
-  rm <name>              Remove a worktree (optionally delete its branch)
+	rm [<name>] [--all]     Remove worktrees (optionally delete their branch)
   apply <name>           Apply worktree changes back to main repo
   prune                  Clean up stale worktree metadata
 
@@ -163,47 +164,111 @@ function cmdPath(args: ParsedArgs): void {
 
 function cmdRm(args: ParsedArgs): void {
 	const name = args._[1];
-	if (!name)
+	const all = flagBool(args, "all", false);
+	if (!name && !all)
 		throw new Error(
-			"Usage: wk rm <name> [--force] [--delete-branch|--keep-branch]",
+			"Usage: wk rm [<name>] [--all] [--force] [--delete-branch|--keep-branch]",
 		);
 
 	const repoRoot = resolveRepoRoot(flagStr(args, "repo"));
 	const depot = path.resolve(flagStr(args, "depot") ?? defaultDepot());
-	const wkDir = worktreePath(depot, repoRoot, name);
 
 	const force = flagBool(args, "force", false);
 	const deleteBranch = flagBool(args, "delete-branch", false);
 	const keepBranch = flagBool(args, "keep-branch", false);
 
-	if (!existsSync(wkDir)) {
-		throw new Error(`No worktree directory found: ${wkDir}`);
-	}
+	const removeWorktree = (worktreeName: string) => {
+		const wkDir = worktreePath(depot, repoRoot, worktreeName);
 
-	const removeArgs = ["worktree", "remove", wkDir];
-	if (force) removeArgs.push("--force");
-	git(repoRoot, removeArgs);
+		if (!existsSync(wkDir)) {
+			throw new Error(`No worktree directory found: ${wkDir}`);
+		}
 
-	try {
-		if (existsSync(wkDir)) rmSync(wkDir, { recursive: true, force: true });
-	} catch {
-		// best-effort cleanup
-	}
+		const removeArgs = ["worktree", "remove", wkDir];
+		if (force) removeArgs.push("--force");
+		git(repoRoot, removeArgs);
 
-	if (deleteBranch && !keepBranch) {
 		try {
-			git(repoRoot, ["branch", "-D", name]);
-			console.log(`Removed worktree and deleted branch: ${name}`);
-			return;
+			if (existsSync(wkDir)) rmSync(wkDir, { recursive: true, force: true });
 		} catch {
-			console.log(
-				`Removed worktree. Could not delete branch "${name}" (it may not exist or is checked out elsewhere).`,
-			);
+			// best-effort cleanup
+		}
+
+		if (deleteBranch && !keepBranch) {
+			try {
+				git(repoRoot, ["branch", "-D", worktreeName]);
+				console.log(
+					`Removed worktree and deleted branch: ${worktreeName}`,
+				);
+				return;
+			} catch {
+				console.log(
+					`Removed worktree. Could not delete branch "${worktreeName}" (it may not exist or is checked out elsewhere).`,
+				);
+				return;
+			}
+		}
+
+		console.log(`Removed worktree: ${worktreeName}`);
+	};
+
+	if (all) {
+		const baseDir = path.resolve(depot, repoIdFromRoot(repoRoot));
+		const baseDirResolved = (() => {
+			try {
+				return realpathSync(baseDir);
+			} catch {
+				return baseDir;
+			}
+		})();
+		const basePrefix = `${baseDirResolved}${path.sep}`;
+		const repoRootResolved = (() => {
+			try {
+				return realpathSync(repoRoot);
+			} catch {
+				return path.resolve(repoRoot);
+			}
+		})();
+		const worktreeList = git(
+			repoRoot,
+			["worktree", "list", "--porcelain"],
+			true,
+		).stdout;
+		const names: string[] = [];
+
+		for (const line of worktreeList.split(/\r?\n/)) {
+			if (!line.startsWith("worktree ")) continue;
+			const worktreePathLine = line.slice("worktree ".length).trim();
+			if (!worktreePathLine) continue;
+			const resolvedPath = (() => {
+				try {
+					return realpathSync(worktreePathLine);
+				} catch {
+					return path.resolve(worktreePathLine);
+				}
+			})();
+			if (resolvedPath === repoRootResolved) continue;
+			if (!resolvedPath.startsWith(basePrefix)) continue;
+			const worktreeName = path.basename(resolvedPath);
+			if (worktreeName) names.push(worktreeName);
+		}
+
+		if (names.length === 0) {
+			console.log("No worktrees to remove.");
 			return;
 		}
+
+		const sortedNames = Array.from(new Set(names)).sort((a, b) =>
+			a.localeCompare(b),
+		);
+		for (const worktreeName of sortedNames) {
+			removeWorktree(worktreeName);
+		}
+
+		return;
 	}
 
-	console.log(`Removed worktree: ${name}`);
+	removeWorktree(name);
 }
 
 function cmdPrune(args: ParsedArgs): void {
