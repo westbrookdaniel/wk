@@ -3,6 +3,7 @@
 `wk` is a CLI for managing git worktrees in a global depot. Built with [Bun](https://bun.dev/).
 
 It keeps worktrees outside your repo (default `~/.worktrees/<repo-id>/<name>`) so your main working directory stays clean.
+When you create a new worktree from a dirty checkout, `wk new` moves those uncommitted changes into the new worktree.
 
 ## Examples
 
@@ -46,6 +47,7 @@ Copy this into an `AGENTS.md` or similar:
 
 ### Worktree Safety Checks (Required)
 
+- `wk new ...` moves tracked, staged, and untracked changes into the new worktree when the source checkout is dirty.
 - After `wk new ...`, immediately run `wk apply <name> --repo <repo>` before editing files.
 - Before making code changes, verify you are attached to the ticket branch (not detached):
 

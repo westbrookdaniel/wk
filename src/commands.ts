@@ -11,6 +11,7 @@ import {
 	isDirty,
 	repoIdFromRoot,
 	resolveApplyMode,
+	transferUncommittedChanges,
 	worktreePath,
 } from "./core/worktree.ts";
 import type { ParsedArgs } from "./types.ts";
@@ -127,10 +128,14 @@ function cmdNew(args: ParsedArgs): void {
 		}
 	}
 
+	const movedChanges = transferUncommittedChanges(repoRoot, wkDir);
+
 	console.log(`Created worktree: ${name}
 Path: ${wkDir}
 Repo: ${repoRoot}
 Branch: ${noBranch ? `(ref: ${base})` : branch}
+${movedChanges ? `Changes: moved uncommitted changes into the new worktree
+` : ""}
 
 Next:
   cd "${wkDir}"
@@ -266,6 +271,10 @@ function cmdRm(args: ParsedArgs): void {
 		}
 
 		return;
+	}
+
+	if (!name) {
+		throw new Error("Usage: wk rm [<name>] [--all]");
 	}
 
 	removeWorktree(name);
